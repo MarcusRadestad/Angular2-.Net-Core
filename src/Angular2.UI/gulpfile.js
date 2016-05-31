@@ -1,58 +1,71 @@
-﻿/*
-This file in the main entry point for defining Gulp tasks and using Gulp plugins.
-Click here to learn more. http://go.microsoft.com/fwlink/?LinkId=518007
-*/
-
+﻿
 require('es6-promise').polyfill();
 var gulp = require('gulp'),
     tsc = require('gulp-typescript'),
     tslint = require('gulp-tslint'),
+    runSeq = require('run-sequence'),
     sourcemaps = require('gulp-sourcemaps'),
     livereload = require('gulp-livereload'),
-    tsProject = tsc.createProject('./app/tsconfig.json'),
+    tsProject = tsc.createProject('./tsconfig.json'),
     clean = require('gulp-clean'),
     del = require('del'),
     inject = require('gulp-inject'),
     concat = require('gulp-concat'),
     print = require('gulp-print'),
     uglify = require('gulp-uglify'),
+    flatten = require('gulp-flatten'),
     cssnano = require('gulp-cssnano');
 
 
+
+// should be extracted to separate file....
 var config = {
-
-    wwwRoot_Lib_DestinationPath: './wwwroot/libs/',
-
-
-    relativePathsToRequiredLibs: [
-        'core-js/client/shim.min.js',
-        'zone.js/dist/zone.js',
-        'reflect-metadata/Reflect.js',
-        'systemjs/dist/system.src.js'
-    ],
-
-    relativePathsToRequiredStyles: [
-      'css/bootstrap.css',
-    ],
-
-    npm_libs : [
-         'es6-shim/es6-shim.min.js',
-         'systemjs/dist/system-polyfills.js',
-         'systemjs/dist/system.src.js',
-         'reflect-metadata/Reflect.js',
-         'reflect-metadata/Reflect.js.map',
-         'rxjs/**',
-         'core-js/**',
-         'zone.js/dist/**',
-         '@angular/**',
-         'jquery/dist/jquery.*js',
-         'bootstrap/dist/js/bootstrap.*js'
-    ],
-
-    allTypeScript: ['./App/**/*.ts'],
-    typeScriptDefinitions : './typings/main/**/*.ts'
+    root: "./wwwroot/",
+    rootLibFolder: "./wwwroot/lib/",
+    rootCssFolder: "./wwwroot/css/",
+    rootFontFolder: "./wwwroot/fonts/",
+    rootAppFolder: "./wwwroot/app/",
+    app: {
+        rootFolder: "./Client/App/",
+        allTypeScriptFiles: ["./Client/App/**/*.ts"],
+        vendorRelativePaths: {
+            Js: [
+              "es6-shim/es6-shim.min.js",
+              "core-js/client/shim.js",
+              "zone.js/dist/zone.js",
+              "reflect-metadata/Reflect.js",
+              "systemjs/dist/system.src.js",
+              "rxjs/bundles/Rx.js",
+              //"bootstrap/dist/js/bootstrap.js"
+            ],
+            Css: [
+              "bootstrap/dist/css/bootstrap.css"
+            ],
+            Fonts: [
+               "bootstrap/dist/fonts/**"
+            ]
+        }
+    },
+    npm_libs: [
+      "es6-shim/es6-shim.min.js",
+      "systemjs/dist/system-polyfills.js",
+      "systemjs/dist/system.src.js",
+      "reflect-metadata/Reflect.js",
+      "reflect-metadata/Reflect.js.map",
+      "rxjs/bundles/*.js",
+      "core-js/**",
+      "!core-js/**/*.ts",
+      "zone.js/dist/**",
+      "!zone.js/dist/**/*.ts",
+      "@angular/**",
+      "!@angular/**/*.ts",      
+      "bootstrap/dist/js/bootstrap.*js"
+    ]
 }
 
+
+
+// helper functions......
 
 var getStamp = function () {
     var myDate = new Date();
@@ -68,87 +81,114 @@ var getStamp = function () {
 };
 
 
+//  VENDORS  section
 
-gulp.task('live-Reload', function () {
-    console.log("run!");    
-    livereload.reload();    
+gulp.task('wwwRoot_vendor_lib_clean', function (done) {
+    return del([
+        config.rootLibFolder + "**/*"
+    ],done);
+});
+
+gulp.task('wwwRoot_vendor_lib_copy', ['wwwRoot_vendor_lib_clean'],function () {
+    return gulp.src(config.npm_libs, { cwd: "node_modules/**" })
+               .pipe(gulp.dest(config.rootLibFolder));
+});
+
+gulp.task('wwwRoot_vendor_font_clean', function (done) {
+    return del([
+        config.rootFontFolder + "**/*"
+    ], done);
+});
+
+gulp.task('wwwRoot_vendor_font_copy', ['wwwRoot_vendor_font_clean'], function (done) {    
+    return gulp.src(config.app.vendorRelativePaths.Fonts, { cwd: "node_modules/**" })
+        .pipe(flatten())
+        .pipe(gulp.dest(config.rootFontFolder));
 });
 
 
-gulp.task('watchForLiveReload', function () {
-    gulp.watch(['./wwwroot/app/**/*.js'], ['live-Reload']);
+gulp.task('wwwRoot_vendor_css_clean', function (done) {
+    return del([
+        config.rootCssFolder + "**/*"
+    ], done);
+});
 
-    gulp.src(['./wwwroot/app/**/*.js'], { read: false }).pipe(print());
-
-    livereload.listen();    
+gulp.task('wwwRoot_vendor_css_copy', ['wwwRoot_vendor_css_clean'], function (done) {
+    return gulp.src(config.app.vendorRelativePaths.Css, { cwd: "node_modules/**" })
+        .pipe(flatten())
+        .pipe(gulp.dest(config.rootCssFolder));
 });
 
 
-gulp.task('inject_requiredLibs', function () {
+gulp.task('wwwRoot_vendor_all', function (done) {
+    runSeq(
+        'wwwRoot_vendor_css_copy',
+        'wwwRoot_vendor_font_copy',
+        'wwwRoot_vendor_lib_copy',
+        done);
+});
 
-    var target = gulp.src('./wwwroot/index.html');
+ 
 
-    var sources = gulp.src(config.relativePathsToRequiredLibs, { read: false, cwd: "wwwroot/libs/**" });
+// Index html related:
+
+gulp.task('wwwRoot_index_html_copy', function () {
+    return gulp.src("./Client/Index.html")
+        .pipe(gulp.dest(config.root));
+});
+
+gulp.task('wwwRoot_index_html_inject_libs', function () {
+
+    var target = gulp.src(config.root + "index.html");
+
+    var sources = gulp.src(config.app.vendorRelativePaths.Js, { read: false, cwd: config.rootLibFolder + "**" });
 
     return target.pipe(inject(
-            sources.pipe(print()), { name: 'libs', relative: true, addRootSlash: false, addSuffix: "?" + getStamp() }))
-            .pipe(gulp.dest('./wwwroot'))
+            sources.pipe(print()), { name: 'lib', relative: true, addRootSlash: false, addSuffix: "?" + getStamp() }))
+            .pipe(gulp.dest(config.root));
 });
 
-gulp.task('inject_requiredCss', function () {
-    var target = gulp.src('./wwwroot/index.html');
+gulp.task('wwwRoot_index_html_inject_css', function () {
 
-    var sources = gulp.src(config.relativePathsToRequiredStyles, { read: false, cwd: "wwwroot/libs/**" });
+    var target = gulp.src(config.root + "index.html");
+
+    var sources = gulp.src(config.rootCssFolder + "**", { read: false });
 
     return target.pipe(inject(
             sources.pipe(print()), { name: 'styles', relative: true, addRootSlash: false, addSuffix: "?" + getStamp() }))
-            .pipe(gulp.dest('./wwwroot'))
+            .pipe(gulp.dest(config.root));
+});
+
+gulp.task('wwwRoot_index_html_systemjsconfig_copy', function () {
+
+    return gulp.src("./Client/systemjs.config.js")
+           .pipe(gulp.dest(config.root));
+});
+
+
+gulp.task('wwwRoot_index_html_all', function (done) {
+    runSeq(
+        "wwwRoot_index_html_copy",
+        "wwwRoot_index_html_systemjsconfig_copy",
+        "wwwRoot_index_html_inject_libs",
+        "wwwRoot_index_html_inject_css",
+        done);
 });
 
 
 
-gulp.task('ts-lint', function () {
-    return gulp.src(config.allTypeScript)
-            .pipe(tslint())
-            .pipe(tslint.report('prose'));
+// app related
+
+gulp.task('wwwRoot_app_templates_clean', function (done) {
+    return del([
+      config.rootAppFolder + "**/*.html"
+    ], done);
 });
 
+gulp.task('wwwRoot_app_templates_copy', ['wwwRoot_app_templates_clean'], function () {
 
+    return gulp.src(config.app.rootFolder + "**/*.html")
+        .pipe(print())
+        .pipe(gulp.dest(config.rootAppFolder));
 
-
-gulp.task('wwwRoot_clean', function () {
-    return gulp.src(config.wwwRoot_Lib_DestinationPath)
-        .pipe(clean());
-});
-
-gulp.task('wwwRoot_copy_npm', function () {
-
-    gulp.src([
-        'node_modules/bootstrap/dist/css/**',        
-    ]).pipe(gulp.dest(config.wwwRoot_Lib_DestinationPath + 'css'));
-    gulp.src([
-      'node_modules/bootstrap/dist/fonts/**',
-    ]).pipe(gulp.dest(config.wwwRoot_Lib_DestinationPath + 'fonts'));
-
-    return gulp.src(config.npm_libs, { cwd: "node_modules/**" })
-        .pipe(gulp.dest(config.wwwRoot_Lib_DestinationPath));
-});
-
-
-
-
-
-
-gulp.task('ts', function (done) {
-
-    var tsResult = gulp.src(["./App/**/*.ts"])
-        .pipe(tsc(tsProject, undefined, tsc.reporter.defaultReporter()));
-
-    return tsResult.js.pipe(gulp.dest('./wwwroot/app'));
-});
-
-gulp.task('watch', ['watch.ts']);
-
-gulp.task('watch.ts', ['ts'], function () {
-    return gulp.watch('app/*.ts', ['ts']);
 });

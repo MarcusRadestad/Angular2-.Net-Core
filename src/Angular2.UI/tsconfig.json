@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "module": "system",
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "noImplicitAny": false,
+    "noEmitOnError": true,
+    "removeComments": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "outDir": "./wwwroot",
+    "rootDir": "./Client"
+  },
+  "exclude": [
+    "node_modules",
+    "wwwroot",
+    "typings"
+  ],  
+  "compileOnSave": true
+}
