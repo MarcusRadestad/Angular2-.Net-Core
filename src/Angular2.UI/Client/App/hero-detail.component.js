@@ -1,4 +1,4 @@
-System.register(['./hero', "@angular/core"], function(exports_1, context_1) {
+System.register(['./hero', "@angular/core", '@angular/router-deprecated', './hero.service'], function(exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
     var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
@@ -10,7 +10,7 @@ System.register(['./hero', "@angular/core"], function(exports_1, context_1) {
     var __metadata = (this && this.__metadata) || function (k, v) {
         if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
     };
-    var hero_1, core_1;
+    var hero_1, core_1, router_deprecated_1, hero_service_1;
     var HeroDetailComponent;
     return {
         setters:[
@@ -19,11 +19,28 @@ System.register(['./hero', "@angular/core"], function(exports_1, context_1) {
             },
             function (core_1_1) {
                 core_1 = core_1_1;
+            },
+            function (router_deprecated_1_1) {
+                router_deprecated_1 = router_deprecated_1_1;
+            },
+            function (hero_service_1_1) {
+                hero_service_1 = hero_service_1_1;
             }],
         execute: function() {
             HeroDetailComponent = (function () {
-                function HeroDetailComponent() {
+                function HeroDetailComponent(heroService, routeParams) {
+                    this.heroService = heroService;
+                    this.routeParams = routeParams;
                 }
+                HeroDetailComponent.prototype.ngOnInit = function () {
+                    var _this = this;
+                    var id = +this.routeParams.get('id');
+                    this.heroService.getHero(id)
+                        .then(function (hero) { return _this.hero = hero; });
+                };
+                HeroDetailComponent.prototype.goBack = function () {
+                    window.history.back();
+                };
                 __decorate([
                     core_1.Input(), 
                     __metadata('design:type', hero_1.Hero)
@@ -31,9 +48,10 @@ System.register(['./hero', "@angular/core"], function(exports_1, context_1) {
                 HeroDetailComponent = __decorate([
                     core_1.Component({
                         selector: "my-hero-detail",
-                        template: "\n  <div *ngIf=\"hero\">\n    <h2>{{hero.name}} details!</h2>\n    <div><label>id: </label>{{hero.id}}</div>\n    <div>\n      <label>name: </label>\n      <input [(ngModel)]=\"hero.name\" placeholder=\"name\"/> \n    </div>\n  </div>\n"
+                        templateUrl: 'app/hero-detail.component.html',
+                        styleUrls: ['app/hero-detail.component.css']
                     }), 
-                    __metadata('design:paramtypes', [])
+                    __metadata('design:paramtypes', [hero_service_1.HeroService, router_deprecated_1.RouteParams])
                 ], HeroDetailComponent);
                 return HeroDetailComponent;
             }());

@@ -7,7 +7,6 @@ var gulp = require('gulp'),
     sourcemaps = require('gulp-sourcemaps'),
     livereload = require('gulp-livereload'),
     tsProject = tsc.createProject('./tsconfig.json'),
-    clean = require('gulp-clean'),
     del = require('del'),
     inject = require('gulp-inject'),
     concat = require('gulp-concat'),
@@ -58,7 +57,9 @@ var config = {
       "zone.js/dist/**",
       "!zone.js/dist/**/*.ts",
       "@angular/**",
-      "!@angular/**/*.ts",      
+      "!@angular/**/*.ts",
+      "angular2-in-memory-web-api/**",
+      "!angular2-in-memory-web-api/**/*.ts",
       "bootstrap/dist/js/bootstrap.*js"
     ]
 }
@@ -159,22 +160,23 @@ gulp.task('wwwRoot_index_html_inject_css', function () {
             .pipe(gulp.dest(config.root));
 });
 
-gulp.task('wwwRoot_index_html_systemjsconfig_copy', function () {
-
-    return gulp.src("./Client/systemjs.config.js")
-           .pipe(gulp.dest(config.root));
-});
-
 
 gulp.task('wwwRoot_index_html_all', function (done) {
     runSeq(
         "wwwRoot_index_html_copy",
-        "wwwRoot_index_html_systemjsconfig_copy",
+        "wwwRoot_systemjsconfig_copy",
         "wwwRoot_index_html_inject_libs",
         "wwwRoot_index_html_inject_css",
         done);
 });
 
+
+
+gulp.task('wwwRoot_systemjsconfig_copy', function () {
+
+    return gulp.src("./Client/systemjs.config.js")
+           .pipe(gulp.dest(config.root));
+});
 
 
 // app related
@@ -190,5 +192,35 @@ gulp.task('wwwRoot_app_templates_copy', ['wwwRoot_app_templates_clean'], functio
     return gulp.src(config.app.rootFolder + "**/*.html")
         .pipe(print())
         .pipe(gulp.dest(config.rootAppFolder));
+
+});
+
+gulp.task('wwwRoot_app_css_clean', function (done) {
+    return del([
+      config.rootAppFolder + "**/*.css"
+    ], done);
+});
+
+gulp.task('wwwRoot_app_css_copy', ['wwwRoot_app_css_clean'], function () {
+
+    return gulp.src(config.app.rootFolder + "**/*.css")
+        .pipe(print())
+        .pipe(gulp.dest(config.rootAppFolder));
+
+});
+
+
+// development watchers
+
+
+// will watch all template files and copy only a single file  to wwwroot when changed.
+// new/deleted files will not be detected...
+gulp.task('development_watch_copy_single_template_on_change', function () {
+
+    gulp.watch(config.app.rootFolder + "**/*.html").on('change', function (file) {
+        gulp.src(file.path, { base: config.app.rootFolder })
+            .pipe(print())
+            .pipe(gulp.dest(config.rootAppFolder));
+    });
 
 });

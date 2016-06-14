@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es5",
-    "module": "system",
+    "module": "system",   // commonjs
     "moduleResolution": "node",
     "sourceMap": true,
     "noImplicitAny": false,
@@ -9,8 +9,9 @@
     "removeComments": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "outDir": "./wwwroot",
     "rootDir": "./Client"
+    //"outDir": "./wwwroot", 
+
   },
   "exclude": [
     "node_modules",

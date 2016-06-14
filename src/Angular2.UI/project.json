@@ -10,7 +10,11 @@
     "Microsoft.VisualStudio.Web.BrowserLink.Loader": "14.0.0-rc2-final",
     "Microsoft.AspNetCore.Diagnostics": "1.0.0-rc2-final",
     "Microsoft.Extensions.Logging.Debug": "1.0.0-rc2-final",
-    "Microsoft.Extensions.PlatformAbstractions": "1.0.0-rc2-final"    
+    "Microsoft.Extensions.PlatformAbstractions": "1.0.0-rc2-final",
+    "Microsoft.AspNetCore.Mvc": "1.0.0-rc2-final",
+    "Microsoft.AspNetCore.Mvc.TagHelpers": "1.0.0-rc2-final",
+    "Microsoft.AspNetCore.Razor": "1.0.0-rc2-final",
+    "Glimpse": "2.0.0-beta1"
   },
 
   "tools": {
